@@ -1,0 +1,29 @@
+[project]
+name = "ecg-arrhythmia-mlops"
+version = "0.1.0"
+description = "Clasificación de arritmias ECG con MLOps: W&B, FastAPI y Docker"
+requires-python = ">=3.10"
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "joblib",
+    "fastapi",
+    "uvicorn",
+    "tensorflow",
+    "wandb",
+    "pyyaml",
+    "matplotlib",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "jupyter",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

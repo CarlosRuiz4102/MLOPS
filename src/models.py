@@ -66,7 +66,6 @@ def train_dummy(data: dict, seed: int) -> np.ndarray:
 def train_logreg(data: dict, seed: int) -> np.ndarray:
     model = LogisticRegression(
         max_iter=500,
-        multi_class="multinomial",
         solver="lbfgs",
         class_weight="balanced",
         random_state=seed,
@@ -87,13 +86,14 @@ def train_random_forest(data: dict, seed: int, fast_run: bool = False):
     return model, model.predict(data["X_val_feat"])
 
 
-def train_mlp(data: dict, seed: int, fast_run: bool = False):
+def train_mlp(data: dict, seed: int, fast_run: bool = False, extra_callbacks=None):
     tf.random.set_seed(seed)
     batch_size = 256 if not fast_run else 64
     epochs = 30 if not fast_run else 3
 
     model = build_mlp(data["X_train_scaled"].shape[1])
     early_stop = callbacks.EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
+    all_callbacks = [early_stop] + (list(extra_callbacks) if extra_callbacks else [])
     model.fit(
         data["X_train_scaled"],
         data["y_train"],
@@ -102,19 +102,20 @@ def train_mlp(data: dict, seed: int, fast_run: bool = False):
         batch_size=batch_size,
         class_weight=data["class_weight_dict"],
         verbose=0,
-        callbacks=[early_stop],
+        callbacks=all_callbacks,
     )
     preds = np.argmax(model.predict(data["X_val_scaled"], verbose=0), axis=1)
     return model, preds
 
 
-def train_cnn1d(data: dict, seed: int, fast_run: bool = False):
+def train_cnn1d(data: dict, seed: int, fast_run: bool = False, extra_callbacks=None):
     tf.random.set_seed(seed)
     batch_size = 256 if not fast_run else 64
     epochs = 30 if not fast_run else 3
 
     model = build_cnn1d((data["X_train_cnn"].shape[1], 1))
     early_stop = callbacks.EarlyStopping(monitor="val_loss", patience=6, restore_best_weights=True)
+    all_callbacks = [early_stop] + (list(extra_callbacks) if extra_callbacks else [])
     model.fit(
         data["X_train_cnn"],
         data["y_train"],
@@ -123,7 +124,7 @@ def train_cnn1d(data: dict, seed: int, fast_run: bool = False):
         batch_size=batch_size,
         class_weight=data["class_weight_dict"],
         verbose=0,
-        callbacks=[early_stop],
+        callbacks=all_callbacks,
     )
     preds = np.argmax(model.predict(data["X_val_cnn"], verbose=0), axis=1)
     return model, preds
