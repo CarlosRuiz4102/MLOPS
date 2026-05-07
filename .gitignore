@@ -1,4 +1,4 @@
-data/
+data/*.csv
 models/*.joblib
 models/*.keras
 models/*.csv
@@ -12,4 +12,5 @@ venv/
 .env
 .pytest_cache/
 *.zip
+_entrega_staging/
 wandb/

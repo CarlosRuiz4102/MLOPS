@@ -74,6 +74,10 @@ data/mitbih_train.csv
 data/mitbih_test.csv
 ```
 
+Nota para la entrega por campus: si el limite de subida es de 50 MB, los CSV pueden
+no ir incluidos en el ZIP compacto. En ese caso se mantiene `data/README.md` con la
+indicacion de los ficheros esperados.
+
 ## Configuracion de W&B
 
 El repositorio no incluye credenciales. Para registrar experimentos en Weights & Biases,
