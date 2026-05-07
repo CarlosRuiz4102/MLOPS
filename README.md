@@ -1,6 +1,6 @@
 # ECG Arrhythmia Classification — MLOps Project
 
-**Autor:** [tu nombre aquí]
+**Autores:** Carlos Ruiz, Alejandro Gomez
 
 Clasificación de latidos ECG con el dataset MIT-BIH aplicando metodologías MLOps:
 entrenamiento reproducible, seguimiento de experimentos con W&B, API REST con FastAPI
@@ -25,7 +25,8 @@ Practica MLOPS/
 │   ├── train.py             # Orquestación, comparación y exportación
 │   └── inference_api.py     # API FastAPI para servir predicciones
 ├── tests/
-├── .env                     # Credenciales de W&B (no incluir en repo)
+├── .env.example             # Plantilla de variables de entorno (copiar a .env)
+├── .gitignore               # .env no se incluye en el repo por seguridad
 ├── Dockerfile
 ├── .dockerignore
 ├── pyproject.toml
@@ -67,11 +68,13 @@ Colocar los ficheros de datos en `data/`:
 
 ### Configuración de W&B (Weights & Biases)
 
-El proyecto carga automáticamente las credenciales de W&B desde un archivo `.env`. Para configurar el acceso:
+**IMPORTANTE:** El archivo `.env` ha sido eliminado del repositorio por razones de seguridad. No debe contener credenciales en control de versiones.
+
+El proyecto carga automáticamente las credenciales de W&B desde un archivo `.env` local. Para configurar el acceso:
 
 **Opción 1: Crear un archivo `.env`** (Recomendado):
 ```bash
-# Crear archivo .env en la raíz del proyecto
+# Crear archivo .env en la raíz del proyecto (local, no se sube a GitHub)
 echo "WANDB_API_KEY=tu_api_key_aqui" > .env
 ```
 
@@ -80,7 +83,7 @@ echo "WANDB_API_KEY=tu_api_key_aqui" > .env
 wandb login
 ```
 
-El código carga automáticamente el `.env` mediante `python-dotenv`, por lo que no necesitas hacer `wandb login` si tienes la key en el archivo.
+El `.env` está incluido en `.gitignore` para evitar exponer credenciales accidentalmente.
 
 ## Entrenamiento
 
@@ -102,6 +105,34 @@ Artefactos generados en `models/`:
 - `cnn_1d.keras`
 - `scaler.joblib`
 - `metrics_summary.csv`
+
+### Seguimiento de Experimentos con Weights & Biases
+
+Durante el entrenamiento, el proyecto registra automáticamente en W&B:
+
+**Configuración:**
+- Hiperparámetros (learning rate, epochs, batch size)
+- Arquitectura del modelo
+- Versión del dataset
+- Semilla (seed)
+- Entorno de ejecución
+
+**Métricas:**
+- Pérdida de entrenamiento y validación por época
+- Accuracy de validación
+- Métricas finales: precisión, recall, F1-score, accuracy balanceado
+
+**Artefactos:**
+- Modelos entrenados (.joblib, .keras)
+- Scaler para normalización
+- Resumen de métricas en CSV
+
+**Comparación de Experimentos:**
+Accede a https://wandb.ai para:
+- Comparar múltiples entrenamientos lado a lado
+- Visualizar curvas de aprendizaje
+- Analizar qué configuraciones dieron mejores resultados
+- Reproducir cualquier experimento con sus parámetros exactos
 
 ## API de inferencia
 
