@@ -1,193 +1,208 @@
-# ECG Arrhythmia Classification — MLOps Project
+# ECG Arrhythmia Classification - Proyecto MLOps
 
-**Autores:** Carlos Ruiz, Alejandro Gomez
+**Autores:** Carlos Ruiz Oyarzun y Alejandro Gomez
 
-Clasificación de latidos ECG con el dataset MIT-BIH aplicando metodologías MLOps:
-entrenamiento reproducible, seguimiento de experimentos con W&B, API REST con FastAPI
-y contenedorización con Docker.
+Proyecto final de MLOps aplicado a un modelo de clasificacion de latidos ECG con el
+dataset MIT-BIH. El repositorio incluye entrenamiento reproducible, tracking de
+experimentos con Weights & Biases, API REST con FastAPI, tests automatizados, CI en
+GitHub Actions y contenedorizacion con Docker.
 
-## Estructura
+## Funcionalidades principales
+
+- Entrenamiento de varios modelos de clasificacion: baseline, regresion logistica,
+  Random Forest, MLP y CNN 1D.
+- Comparacion de metricas en validacion y test.
+- Registro de configuracion, metricas, tablas y artefactos en W&B.
+- API de inferencia con FastAPI para servir predicciones.
+- Dockerfile para ejecutar el servicio de inferencia en un contenedor.
+- Tests unitarios y workflow de CI/CD en GitHub Actions.
+
+## Estructura del proyecto
 
 ```text
-Practica MLOPS/
+PruebaMLOPS/
 ├── config/
-│   └── config.yaml          # Hiperparámetros del experimento
-├── data/                    # mitbih_train.csv y mitbih_test.csv (no incluidos en repo)
-├── img/                     # Reportes y visualizaciones
-├── models/                  # Artefactos entrenados (generados por train.py)
-├── notebooks/               # Exploración y resumen de resultados
+│   └── config.yaml              # Configuracion base de entrenamiento
+├── data/
+│   ├── mitbih_train.csv         # Dataset de entrenamiento
+│   └── mitbih_test.csv          # Dataset de test
+├── img/                         # Capturas de ejecucion, API y W&B
+├── models/                      # Artefactos generados durante el entrenamiento
+├── notebooks/                   # Notebooks original y resumido
 ├── src/
-│   ├── config.py            # Constantes globales
-│   ├── data.py              # Carga y particionado de datos
-│   ├── features.py          # Extracción de features temporales
-│   ├── evaluation.py        # Métricas y tabla comparativa
-│   ├── models.py            # Definición y entrenamiento de modelos
-│   ├── train.py             # Orquestación, comparación y exportación
-│   └── inference_api.py     # API FastAPI para servir predicciones
-├── tests/
-├── .env.example             # Plantilla de variables de entorno (copiar a .env)
-├── .gitignore               # .env no se incluye en el repo por seguridad
+│   ├── config.py                # Constantes globales
+│   ├── data.py                  # Carga y particionado de datos
+│   ├── evaluation.py            # Metricas
+│   ├── features.py              # Extraccion de caracteristicas
+│   ├── inference_api.py         # API FastAPI
+│   ├── models.py                # Modelos y entrenamiento
+│   └── train.py                 # Orquestacion del experimento
+├── tests/                       # Tests unitarios
+├── .github/workflows/tests.yml  # CI en GitHub Actions
 ├── Dockerfile
-├── .dockerignore
 ├── pyproject.toml
+├── uv.lock
 └── README.md
 ```
 
-## Clases predichas (MIT-BIH)
+## Clases predichas
 
-| Clase | Descripción |
-|-------|-------------|
-| 0 | N — latido normal |
-| 1 | S — supraventricular |
-| 2 | V — ventricular |
-| 3 | F — fusionado |
-| 4 | Q — desconocido |
+| Clase | Descripcion |
+| ----- | ----------- |
+| 0 | N - latido normal |
+| 1 | S - supraventricular |
+| 2 | V - ventricular |
+| 3 | F - fusionado |
+| 4 | Q - desconocido |
 
-## Configuración del entorno local
+## Configuracion local
 
-El proyecto usa [uv](https://docs.astral.sh/uv/) para gestionar el entorno virtual y las dependencias definidas en `pyproject.toml`.
-
-Las dependencias están divididas en dos grupos:
-- **Producción** (`dependencies`): lo que necesita la API y el entrenamiento.
-- **Dev** (`[project.optional-dependencies] dev`): herramientas de desarrollo (`pytest`, `jupyter`) que no se instalan en Docker para mantener la imagen ligera.
+El proyecto usa `uv` para crear el entorno e instalar dependencias.
 
 ```bash
-# Instalar uv (si no lo tienes)
+# Instalar uv si no esta disponible
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Crear .venv e instalar todo (producción + dev)
+# Crear entorno e instalar dependencias de produccion y desarrollo
 uv sync --extra dev
-
-# Solo producción (equivalente a lo que hace Docker)
-uv sync --no-dev
 ```
 
-Colocar los ficheros de datos en `data/`:
-- `data/mitbih_train.csv`
-- `data/mitbih_test.csv`
+Los ficheros de datos deben estar en:
 
-### Configuración de W&B (Weights & Biases)
+```text
+data/mitbih_train.csv
+data/mitbih_test.csv
+```
 
-**IMPORTANTE:** El archivo `.env` ha sido eliminado del repositorio por razones de seguridad. No debe contener credenciales en control de versiones.
+## Configuracion de W&B
 
-El proyecto carga automáticamente las credenciales de W&B desde un archivo `.env` local. Para configurar el acceso:
+El repositorio no incluye credenciales. Para registrar experimentos en Weights & Biases,
+crea un archivo `.env` local a partir de `.env.example`:
 
-**Opción 1: Crear un archivo `.env`** (Recomendado):
 ```bash
-# Crear archivo .env en la raíz del proyecto (local, no se sube a GitHub)
-echo "WANDB_API_KEY=tu_api_key_aqui" > .env
+cp .env.example .env
 ```
 
-**Opción 2: Usar `wandb login`** (Alternativo):
+Despues edita `.env` y anade tu clave:
+
+```text
+WANDB_API_KEY=tu_api_key
+```
+
+Tambien se puede autenticar con:
+
 ```bash
 wandb login
 ```
 
-El `.env` está incluido en `.gitignore` para evitar exponer credenciales accidentalmente.
-
 ## Entrenamiento
 
-Con la configuración por defecto (`config/config.yaml`):
+Entrenamiento con la configuracion base:
 
 ```bash
 python src/train.py --config config/config.yaml --wandb-project ecg-classification
 ```
 
-Entrenamiento rápido para pruebas (sin W&B):
+Entrenamiento rapido para pruebas locales, sin W&B:
 
 ```bash
 python src/train.py --fast-run --no-wandb
 ```
 
-Artefactos generados en `models/`:
+Artefactos esperados en `models/`:
+
 - `random_forest_ecg.joblib`
 - `mlp.keras`
 - `cnn_1d.keras`
 - `scaler.joblib`
 - `metrics_summary.csv`
 
-### Seguimiento de Experimentos con Weights & Biases
-
-Durante el entrenamiento, el proyecto registra automáticamente en W&B:
-
-**Configuración:**
-- Hiperparámetros (learning rate, epochs, batch size)
-- Arquitectura del modelo
-- Versión del dataset
-- Semilla (seed)
-- Entorno de ejecución
-
-**Métricas:**
-- Pérdida de entrenamiento y validación por época
-- Accuracy de validación
-- Métricas finales: precisión, recall, F1-score, accuracy balanceado
-
-**Artefactos:**
-- Modelos entrenados (.joblib, .keras)
-- Scaler para normalización
-- Resumen de métricas en CSV
-
-**Comparación de Experimentos:**
-Accede a https://wandb.ai para:
-- Comparar múltiples entrenamientos lado a lado
-- Visualizar curvas de aprendizaje
-- Analizar qué configuraciones dieron mejores resultados
-- Reproducir cualquier experimento con sus parámetros exactos
-
 ## API de inferencia
 
-Requiere tener los modelos entrenados en `models/` antes de lanzar la API.
+La API requiere que existan los artefactos entrenados en `models/`.
 
 ```bash
-uvicorn src.inference_api:app --reload
+uv run uvicorn src.inference_api:app --reload
 ```
 
-Documentación interactiva disponible en: `http://localhost:8000/docs`
+Documentacion interactiva:
 
-Ejemplo de petición:
+```text
+http://localhost:8000/docs
+```
+
+Health check:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Ejemplo de peticion:
 
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"signal": [0.0, 0.1, ...], "model_name": "random_forest"}'
+  -d '{"signal": [0.0, 0.1, 0.2], "model_name": "random_forest"}'
 ```
 
-Modelos disponibles: `random_forest`, `mlp`, `cnn_1d`.
+El campo `signal` debe contener 187 valores numericos. Modelos disponibles:
+`random_forest`, `mlp` y `cnn_1d`.
 
-### Ejemplo de petición y respuesta (modelo MLP)
+### Evidencias de inferencia
 
-Petición:
+Peticion:
+
 <div align="center">
-  <img src="img/inference_request.jpg" alt="Ejemplo petición al modelo MLP" width="800">
+  <img src="img/inference_request.jpg" alt="Ejemplo de peticion al modelo MLP" width="800">
 </div>
 
 Respuesta:
-<div align="center">
-  <img src="img/inference_response.jpg" alt="Ejemplo respuesta del modelo MLP" width="800">
-</div>
-
-## Resultados de Experimentos
 
 <div align="center">
-  <img src="img/reporte_mlops.jpg" alt="Reporte MLOps" width="800">
+  <img src="img/inference_response.jpg" alt="Ejemplo de respuesta del modelo MLP" width="800">
+</div>
+
+## Experimentos en W&B
+
+Durante el entrenamiento se registran:
+
+- Hiperparametros y configuracion del experimento.
+- Perdida y accuracy por epoca para los modelos neuronales.
+- Metricas finales de validacion y test.
+- Tabla comparativa de modelos.
+- Artefactos de modelos entrenados.
+
+<div align="center">
+  <img src="img/reporte_mlops.jpg" alt="Reporte MLOps en W&B" width="800">
 </div>
 
 <div align="center">
-  <img src="img/runs.jpg" alt="Runs MLOps" width="800">
+  <img src="img/runs.jpg" alt="Runs del proyecto en W&B" width="800">
 </div>
 
-Para explorar todos los experimentos en detalle, consulta el [Proyecto W&B](https://api.wandb.ai/links/practica-mlops-upm/83i5bibb).
+Proyecto W&B:
+
+https://api.wandb.ai/links/practica-mlops-upm/83i5bibb
 
 ## Docker
 
-Construir y lanzar el contenedor (sirve la API de inferencia):
+Construir la imagen:
 
 ```bash
 docker build -t ecg-api .
-docker run -p 8000:8000 -v $(pwd)/models:/app/models ecg-api
 ```
 
-La API quedará disponible en `http://localhost:8000`.
+Lanzar el servicio:
+
+```bash
+docker run -p 8000:8000 -v "$(pwd)/models:/app/models" ecg-api
+```
+
+La API queda disponible en:
+
+```text
+http://localhost:8000
+```
 
 ## Tests
 
@@ -197,14 +212,11 @@ PYTHONPATH=. uv run pytest -v
 
 ## CI/CD
 
-El proyecto cuenta con un workflow de GitHub Actions (`.github/workflows/tests.yml`) que:
-- Ejecuta automáticamente los tests en cada push y pull request
-- Prueba en Python 3.10, 3.11 y 3.12
-- Valida la calidad del código
+El workflow `.github/workflows/tests.yml` ejecuta los tests automaticamente en cada
+push o pull request contra `main` y `develop`, usando Python 3.10, 3.11 y 3.12.
 
-## Enlaces
+## Enlaces de entrega
 
-- **GitHub:** https://github.com/CarlosRuiz4102/MLOPS
-- **W&B Report:** https://api.wandb.ai/links/practica-mlops-upm/83i5bibb
-- **Endpoint en producción:** N/A (se ha ejecutado en local)
-
+- GitHub: https://github.com/CarlosRuiz4102/MLOPS
+- W&B Report: https://api.wandb.ai/links/practica-mlops-upm/83i5bibb
+- Endpoint del servicio: http://localhost:8000/docs
